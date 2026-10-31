@@ -1,0 +1,75 @@
+name: Release
+
+# Setiap push ke master dicek: kalau ada commit feat/fix/perf/breaking sejak tag terakhir,
+# versi baru dihitung (semver), aplikasi di-build dan dites, lalu hasilnya dirilis di GitHub Releases.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Hitung versi berikutnya
+        id: next
+        run: |
+          version=$(bash scripts/next-version.sh)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Versi berikutnya: ${version:-tidak ada rilis}" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    needs: version
+    if: needs.version.outputs.version != ''
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test tests/FolderShift.Tests -c Release
+
+      - name: Build
+        run: dotnet build src/FolderShift -c Release -p:Version=$env:VERSION
+
+      - name: Kemas
+        shell: pwsh
+        run: |
+          $out = "src/FolderShift/bin/Release/net48"
+          $name = "FolderShift-v$env:VERSION"
+          New-Item -ItemType Directory -Force "dist/$name" | Out-Null
+          Copy-Item "$out/FolderShift.exe" "dist/$name/"
+          if (Test-Path "$out/FolderShift.exe.config") { Copy-Item "$out/FolderShift.exe.config" "dist/$name/" }
+          Copy-Item "src/FolderShift/Fonts/OFL.txt" "dist/$name/LICENSE-IBM-Plex.txt"
+          Copy-Item "$out/FolderShift.exe" "dist/$name.exe"
+          Compress-Archive -Path "dist/$name/*" -DestinationPath "dist/$name-win.zip"
+          Get-ChildItem dist -File | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content dist/SHA256SUMS.txt
+
+      - name: Rilis
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $name = "FolderShift-v$env:VERSION"
+          gh release create "v$env:VERSION" "dist/$name.exe" "dist/$name-win.zip" "dist/SHA256SUMS.txt" `
+            --target "$env:GITHUB_SHA" --title "FolderShift v$env:VERSION" --generate-notes

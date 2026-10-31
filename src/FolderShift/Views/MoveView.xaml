@@ -1,0 +1,62 @@
+<UserControl x:Class="FolderShift.Views.MoveView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:FolderShift"
+             xmlns:views="clr-namespace:FolderShift.Views">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+            <StackPanel MaxWidth="1080" Margin="24,32,24,64">
+
+                <!-- Penunjuk langkah -->
+                <ItemsControl ItemsSource="{Binding Steps}" Focusable="False" Margin="0,0,0,16">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:StepItem}">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,24,8">
+                                <Grid Width="24" Height="24" Margin="0,0,8,0">
+                                    <Ellipse x:Name="circle" Stroke="{StaticResource LineDashed}" StrokeThickness="1" Fill="Transparent" />
+                                    <TextBlock x:Name="num" Text="{Binding Number}" FontSize="12" Foreground="{StaticResource Muted}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Path x:Name="check" Style="{StaticResource Icon.Small}" Data="{StaticResource G.Check}" Stroke="{StaticResource AccentInk}"
+                                          StrokeThickness="3" HorizontalAlignment="Center" Visibility="Collapsed">
+                                        <Path.LayoutTransform><ScaleTransform ScaleX="0.5" ScaleY="0.5" /></Path.LayoutTransform>
+                                    </Path>
+                                </Grid>
+                                <TextBlock x:Name="label" Text="{Binding Label}" FontSize="13" FontWeight="Medium" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding State}" Value="Current">
+                                    <Setter TargetName="circle" Property="Fill" Value="{StaticResource Accent}" />
+                                    <Setter TargetName="circle" Property="Stroke" Value="{StaticResource Accent}" />
+                                    <Setter TargetName="num" Property="Foreground" Value="{StaticResource OnAccent}" />
+                                    <Setter TargetName="label" Property="Foreground" Value="{StaticResource Ink}" />
+                                    <Setter TargetName="label" Property="FontWeight" Value="SemiBold" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding State}" Value="Done">
+                                    <Setter TargetName="circle" Property="Fill" Value="{StaticResource AccentSoft}" />
+                                    <Setter TargetName="circle" Property="Stroke" Value="{StaticResource AccentSoft}" />
+                                    <Setter TargetName="num" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="check" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="label" Property="Foreground" Value="{StaticResource Ink2}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Style="{StaticResource Note.Danger}" Margin="0,0,0,24" Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding Error}" Style="{StaticResource T.BodySm}" Foreground="{StaticResource DangerInk}" />
+                </Border>
+
+                <views:SelectStep Visibility="{Binding IsSelect, Converter={StaticResource BoolToVis}}" />
+                <views:CopyStep Visibility="{Binding IsCopy, Converter={StaticResource BoolToVis}}" />
+                <views:ReviewStep Visibility="{Binding IsReview, Converter={StaticResource BoolToVis}}" />
+                <views:DoneStep Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <views:BusyOverlay />
+    </Grid>
+</UserControl>

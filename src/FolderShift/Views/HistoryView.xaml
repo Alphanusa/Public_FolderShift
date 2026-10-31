@@ -1,0 +1,261 @@
+<UserControl x:Class="FolderShift.Views.HistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:FolderShift"
+             xmlns:views="clr-namespace:FolderShift.Views">
+    <UserControl.Resources>
+        <Style x:Key="Tile" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Padding" Value="20,16" />
+            <Setter Property="Margin" Value="0,0,16,0" />
+        </Style>
+        <!-- Baris daftar yang bisa dipilih -->
+        <Style x:Key="ListRow" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Surface}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,14">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+                </Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SurfaceMuted}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Dt" TargetType="TextBlock" BasedOn="{StaticResource T.Overline}">
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+            <StackPanel MaxWidth="1080" Margin="24,32,24,64">
+                <DockPanel Margin="0,0,0,24">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Command="{Binding CheckAll}" VerticalAlignment="Bottom">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Refresh}" Margin="0,0,8,0" />
+                            <TextBlock Text="Cek semua tautan" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Text="Riwayat" Style="{StaticResource T.Title}" />
+                        <TextBlock Text="Semua folder yang pernah kamu pindahkan beserta kesehatan tautannya." Style="{StaticResource T.Body}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </DockPanel>
+
+                <Border Style="{StaticResource Note.Ok}" Margin="0,0,0,24" Visibility="{Binding HasInfo, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding Info}" Style="{StaticResource T.BodySm}" Foreground="{StaticResource Success}" />
+                </Border>
+                <Border Style="{StaticResource Note.Danger}" Margin="0,0,0,24" Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding Error}" Style="{StaticResource T.BodySm}" Foreground="{StaticResource DangerInk}" />
+                </Border>
+
+                <Border Style="{StaticResource Card}" Visibility="{Binding HasItems, Converter={StaticResource NotBoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="Belum ada folder yang dipindahkan" Style="{StaticResource T.Heading}" />
+                        <TextBlock Text="Folder yang kamu pindahkan lewat menu Pindah folder akan muncul di sini." Style="{StaticResource T.Caption}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Visibility="{Binding HasItems, Converter={StaticResource BoolToVis}}">
+                    <UniformGrid Columns="3" Margin="0,0,-16,24">
+                        <Border Style="{StaticResource Tile}">
+                            <StackPanel>
+                                <TextBlock Text="FOLDER DIPINDAH" Style="{StaticResource T.Overline}" />
+                                <TextBlock Text="{Binding Count}" FontSize="26" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Tile}">
+                            <StackPanel>
+                                <TextBlock Text="TOTAL YANG DIPINDAH" Style="{StaticResource T.Overline}" />
+                                <TextBlock Text="{Binding TotalText}" FontSize="26" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Tile}">
+                            <StackPanel>
+                                <TextBlock Text="PERLU PERHATIAN" Style="{StaticResource T.Overline}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="{Binding AttentionCount}" FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource Warning}" />
+                                    <TextBlock Text="{Binding AttentionNote}" Style="{StaticResource T.Caption}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                        <RadioButton Style="{StaticResource Chip}" GroupName="filter" IsChecked="{Binding IsAll}">
+                            <TextBlock><Run Text="Semua" /> <Run Text="{Binding Count, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" /></TextBlock>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource Chip}" GroupName="filter" IsChecked="{Binding IsActiveFilter}">
+                            <TextBlock><Run Text="Aktif" /> <Run Text="{Binding ActiveCount, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" /></TextBlock>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource Chip}" GroupName="filter" IsChecked="{Binding IsAttention}">
+                            <TextBlock><Run Text="Perlu perhatian" /> <Run Text="{Binding AttentionCount, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" /></TextBlock>
+                        </RadioButton>
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="24" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource Card}" Padding="8" VerticalAlignment="Top">
+                            <StackPanel>
+                                <ItemsControl ItemsSource="{Binding Visible}" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type local:HistoryItem}">
+                                            <RadioButton Style="{StaticResource ListRow}" GroupName="history" IsChecked="{Binding IsSelected}">
+                                                <DockPanel>
+                                                    <Border Style="{StaticResource IconTile}" Width="40" Height="40" CornerRadius="10" Margin="0,0,14,0" VerticalAlignment="Center">
+                                                        <Path Style="{StaticResource Icon}" Data="{StaticResource G.Link}" Stroke="{StaticResource Ink2}" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                    <StackPanel DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center">
+                                                        <ContentControl Content="{Binding Status}" ContentTemplate="{StaticResource StatusBadge}" HorizontalAlignment="Right" Focusable="False" />
+                                                        <TextBlock Text="{Binding SummaryText}" Style="{StaticResource T.Caption}" HorizontalAlignment="Right" Margin="0,4,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" Style="{StaticResource T.Subheading}" />
+                                                        <TextBlock Text="{Binding Destination}" Style="{StaticResource T.Code}" Foreground="{StaticResource Muted}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </RadioButton>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="Tidak ada folder dengan status ini." Style="{StaticResource T.BodySm}" Foreground="{StaticResource Muted}"
+                                           HorizontalAlignment="Center" Margin="16,32" Visibility="{Binding IsEmptyFilter, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                            <StackPanel DataContext="{Binding Selected}">
+                                <DockPanel Margin="0,0,0,20">
+                                    <ContentControl DockPanel.Dock="Right" Content="{Binding Status}" ContentTemplate="{StaticResource StatusBadge}" Focusable="False" />
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource T.Heading}" />
+                                </DockPanel>
+
+                                <Border Style="{StaticResource Note.Warn}" Margin="0,0,0,20" Visibility="{Binding IsBroken, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Status.Label}" Style="{StaticResource T.Subheading}" Foreground="{StaticResource Warning}" />
+                                        <TextBlock Text="{Binding BrokenText}" Style="{StaticResource T.BodySm}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="LOKASI LAMA (TAUTAN)" Style="{StaticResource Dt}" />
+                                <TextBlock Text="{Binding Source}" Style="{StaticResource T.Code}" Margin="0,0,0,14" />
+                                <TextBlock Text="ISI SEKARANG DI" Style="{StaticResource Dt}" />
+                                <TextBlock Text="{Binding Destination}" Style="{StaticResource T.Code}" Margin="0,0,0,14" />
+                                <WrapPanel Margin="0,0,0,14">
+                                    <StackPanel Margin="0,0,32,0">
+                                        <TextBlock Text="METODE" Style="{StaticResource Dt}" />
+                                        <TextBlock Text="{Binding KindText}" FontSize="14" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,32,0">
+                                        <TextBlock Text="UKURAN" Style="{StaticResource Dt}" />
+                                        <TextBlock Text="{Binding SizeText}" FontSize="14" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="DIPINDAH" Style="{StaticResource Dt}" />
+                                        <TextBlock Text="{Binding DateText}" FontSize="14" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock Text="CADANGAN" Style="{StaticResource Dt}" />
+                                <TextBlock Text="{Binding BackupText}" Style="{StaticResource T.BodySm}" />
+                                <TextBlock Text="{Binding DataContext.CheckedText, RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource T.Caption}" Margin="0,14,0,0" />
+
+                                <!-- Aksi memakai command milik HistoryViewModel -->
+                                <StackPanel DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                                        <Button Style="{StaticResource Btn}" Command="{Binding OpenFolder}" Margin="0,0,8,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Folder}" Margin="0,0,8,0" />
+                                                <TextBlock Text="Buka di Explorer" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Style="{StaticResource Btn}" Command="{Binding CheckAll}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Refresh}" Margin="0,0,8,0" />
+                                                <TextBlock Text="Cek ulang" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+
+                                    <Border BorderBrush="{StaticResource LineSubtle}" BorderThickness="0,1,0,0" Margin="0,20,0,0" Padding="0,20,0,0"
+                                            Visibility="{Binding Selected.Record.Restored, Converter={StaticResource NotBoolToVis}}">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource T.Subheading}"><Run Text="Kembalikan ke" /> <Run Text="{Binding Selected.SourceDrive, Mode=OneWay}" /></TextBlock>
+                                            <TextBlock Text="{Binding Selected.RestoreHow}" Style="{StaticResource T.Caption}" Margin="0,2,0,12" />
+                                            <Button Style="{StaticResource Btn}" Command="{Binding AskRestore}"
+                                                    Visibility="{Binding IsConfirmRestore, Converter={StaticResource NotBoolToVis}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Undo}" Margin="0,0,8,0" />
+                                                    <TextBlock VerticalAlignment="Center"><Run Text="Kembalikan ke" /> <Run Text="{Binding Selected.SourceDrive, Mode=OneWay}" /></TextBlock>
+                                                </StackPanel>
+                                            </Button>
+                                            <Border Style="{StaticResource Well}" Padding="16,14" Visibility="{Binding IsConfirmRestore, Converter={StaticResource BoolToVis}}">
+                                                <StackPanel>
+                                                    <TextBlock Style="{StaticResource T.Subheading}">
+                                                        <Run Text="Kembalikan" /> <Run Text="{Binding Selected.Name, Mode=OneWay}" /> <Run Text="ke" /> <Run Text="{Binding Selected.SourceDrive, Mode=OneWay}" /><Run Text="?" />
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Selected.RestoreConfirm}" Style="{StaticResource T.BodySm}" Margin="0,4,0,12" />
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Style="{StaticResource Btn}" Content="Batal" Command="{Binding CancelConfirm}" Margin="0,0,8,0" />
+                                                        <Button Style="{StaticResource Btn.Primary}" Command="{Binding ConfirmRestore}">
+                                                            <TextBlock><Run Text="Kembalikan ke" /> <Run Text="{Binding Selected.SourceDrive, Mode=OneWay}" /></TextBlock>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border BorderBrush="{StaticResource LineSubtle}" BorderThickness="0,1,0,0" Margin="0,20,0,0" Padding="0,20,0,0"
+                                            Visibility="{Binding Selected.HasBackup, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel>
+                                            <TextBlock Text="Hapus cadangan" Style="{StaticResource T.Subheading}" />
+                                            <TextBlock Text="Lakukan setelah kamu yakin aplikasinya jalan normal dari lokasi baru." Style="{StaticResource T.Caption}" Margin="0,2,0,12" />
+                                            <Button Style="{StaticResource Btn.Danger}" Content="Hapus cadangan" Command="{Binding AskDeleteBackup}"
+                                                    Visibility="{Binding IsConfirmDeleteBackup, Converter={StaticResource NotBoolToVis}}" />
+                                            <Border Style="{StaticResource Note.Danger}" Visibility="{Binding IsConfirmDeleteBackup, Converter={StaticResource BoolToVis}}">
+                                                <StackPanel>
+                                                    <TextBlock Style="{StaticResource T.Subheading}" Foreground="{StaticResource DangerInk}">
+                                                        <Run Text="Hapus cadangan" /> <Run Text="{Binding Selected.Name, Mode=OneWay}" /><Run Text="?" />
+                                                    </TextBlock>
+                                                    <TextBlock Style="{StaticResource T.BodySm}" Foreground="{StaticResource DangerInk}" Margin="0,4,0,12">
+                                                        <Run Text="{Binding Selected.SizeText, Mode=OneWay}" /> <Run Text="dihapus permanen. Setelah ini, kembali ke" />
+                                                        <Run Text="{Binding Selected.SourceDrive, Mode=OneWay}" /> <Run Text="hanya bisa dengan menyalin ulang dari" />
+                                                        <Run Text="{Binding Selected.DestinationDrive, Mode=OneWay}" /><Run Text="." />
+                                                    </TextBlock>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Style="{StaticResource Btn}" Content="Batal" Command="{Binding CancelConfirm}" Margin="0,0,8,0" />
+                                                        <Button Style="{StaticResource Btn.DangerSolid}" Content="Hapus cadangan" Command="{Binding ConfirmDeleteBackup}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <views:BusyOverlay />
+    </Grid>
+</UserControl>

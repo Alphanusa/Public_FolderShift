@@ -1,0 +1,189 @@
+<UserControl x:Class="FolderShift.Views.CopyStep"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- Penanda langkah bernomor yang belum berjalan -->
+        <Style x:Key="StepNumber" TargetType="Border">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineDashed}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,0,14,0" />
+        </Style>
+        <Style x:Key="StepCurrent" TargetType="Border" BasedOn="{StaticResource StepNumber}">
+            <Setter Property="Background" Value="{StaticResource Accent}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+        </Style>
+        <Style x:Key="StepDone" TargetType="Border" BasedOn="{StaticResource StepNumber}">
+            <Setter Property="Background" Value="{StaticResource AccentSoft}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AccentSoft}" />
+        </Style>
+        <Style x:Key="Row" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{StaticResource LineSubtle}" />
+            <Setter Property="BorderThickness" Value="0,1,0,0" />
+            <Setter Property="Padding" Value="0,14" />
+        </Style>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <TextBlock Text="{Binding CopyTitle}" Style="{StaticResource T.Title}" />
+        <TextBlock Text="Menyalin isi folder ke tujuan beserta permission-nya. Folder asli belum disentuh." Style="{StaticResource T.Body}" Margin="0,6,0,24" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.4*" />
+                <ColumnDefinition Width="24" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}" Padding="24,24,24,10">
+                <StackPanel>
+                    <TextBlock Text="Proses" Style="{StaticResource T.Heading}" Margin="0,0,0,12" />
+
+                    <Border Style="{StaticResource Row}">
+                        <DockPanel>
+                            <Border Style="{StaticResource StepDone}">
+                                <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Check}" Stroke="{StaticResource AccentInk}" HorizontalAlignment="Center" />
+                            </Border>
+                            <TextBlock DockPanel.Dock="Right" Text="Selesai" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Success}" />
+                            <StackPanel>
+                                <TextBlock Text="Cek awal" Style="{StaticResource T.Subheading}" />
+                                <TextBlock Text="Ruang cukup, tidak ada aplikasi yang memakai folder, hak Administrator aktif." Style="{StaticResource T.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}">
+                        <DockPanel>
+                            <Grid>
+                                <Border Style="{StaticResource StepCurrent}" Visibility="{Binding IsCopying, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="2" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource OnAccent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <Border Style="{StaticResource StepDone}" Visibility="{Binding IsVerifying, Converter={StaticResource BoolToVis}}">
+                                    <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Check}" Stroke="{StaticResource AccentInk}" HorizontalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                            <ContentControl DockPanel.Dock="Right" Content="{Binding CopyStatus}" ContentTemplate="{StaticResource StatusBadge}" VerticalAlignment="Top" Focusable="False" />
+                            <StackPanel Margin="0,0,12,0">
+                                <TextBlock Text="Salin file dan permission" Style="{StaticResource T.Subheading}" />
+                                <TextBlock Text="robocopy /COPYALL: isi, ACL, owner, atribut, dan timestamp." Style="{StaticResource T.Caption}" />
+                                <DockPanel Margin="0,10,0,6">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding CopiedText}" FontSize="14" Foreground="{StaticResource Muted}" />
+                                    <TextBlock Text="{Binding PercentText}" FontSize="14" FontWeight="SemiBold" />
+                                </DockPanel>
+                                <ProgressBar Maximum="100" Value="{Binding Percent, Mode=OneWay}" AutomationProperties.Name="Penyalinan" />
+                                <WrapPanel Margin="0,6,0,0">
+                                    <TextBlock Text="{Binding FilesText}" Style="{StaticResource T.Caption}" Margin="0,0,16,0" />
+                                    <TextBlock Text="{Binding SpeedText}" Style="{StaticResource T.Caption}" Margin="0,0,16,0" />
+                                    <TextBlock Text="{Binding EtaText}" Style="{StaticResource T.Caption}" />
+                                </WrapPanel>
+                                <Border Style="{StaticResource Well}" Padding="10,8" Margin="0,10,0,0">
+                                    <TextBlock Text="{Binding CurrentFile}" Style="{StaticResource T.Code}" Foreground="{StaticResource Ink2}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                </Border>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}">
+                        <DockPanel>
+                            <Grid>
+                                <Border Style="{StaticResource StepNumber}" Visibility="{Binding IsVerifying, Converter={StaticResource NotBoolToVis}}">
+                                    <TextBlock Text="3" FontSize="13" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <Border Style="{StaticResource StepCurrent}" Visibility="{Binding IsVerifying, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="3" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource OnAccent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                            <ContentControl DockPanel.Dock="Right" Content="{Binding VerifyStatus}" ContentTemplate="{StaticResource StatusBadge}" VerticalAlignment="Top" Focusable="False" />
+                            <StackPanel Margin="0,0,12,0">
+                                <TextBlock Text="Bandingkan isi dan permission" Style="{StaticResource T.Subheading}" />
+                                <TextBlock Text="Setiap file di sumber dicocokkan dengan pasangannya di tujuan." Style="{StaticResource T.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}">
+                        <DockPanel>
+                            <Border Style="{StaticResource StepNumber}">
+                                <TextBlock Text="4" FontSize="13" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock DockPanel.Dock="Right" Text="Menunggu" FontSize="13" Foreground="{StaticResource Muted}" />
+                            <StackPanel>
+                                <TextBlock Text="Ganti folder asli dengan tautan" Style="{StaticResource T.Subheading}" />
+                                <TextBlock Text="Hanya jalan setelah kamu meninjau dan setuju." Style="{StaticResource T.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Row}">
+                        <DockPanel>
+                            <Border Style="{StaticResource StepNumber}">
+                                <TextBlock Text="5" FontSize="13" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock DockPanel.Dock="Right" Text="Menunggu" FontSize="13" Foreground="{StaticResource Muted}" />
+                            <StackPanel>
+                                <TextBlock Text="Hapus cadangan" Style="{StaticResource T.Subheading}" />
+                                <TextBlock Text="Setelah kamu memastikan aplikasinya jalan normal." Style="{StaticResource T.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Column="2">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Ringkasan" Style="{StaticResource T.Heading}" Margin="0,0,0,16" />
+                        <TextBlock Text="DARI" Style="{StaticResource T.Overline}" />
+                        <TextBlock Text="{Binding PlanSource}" Style="{StaticResource T.Code}" Margin="0,2,0,14" />
+                        <TextBlock Text="KE" Style="{StaticResource T.Overline}" />
+                        <TextBlock Text="{Binding PlanDestination}" Style="{StaticResource T.Code}" Margin="0,2,0,14" />
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,32,0">
+                                <TextBlock Text="METODE" Style="{StaticResource T.Overline}" />
+                                <TextBlock Text="{Binding PlanKind}" FontSize="14" FontWeight="SemiBold" Margin="0,2,0,0" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="DIMULAI" Style="{StaticResource T.Overline}" />
+                                <TextBlock Text="{Binding StartedText}" FontSize="14" FontWeight="SemiBold" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Note}" Margin="0,24,0,0">
+                    <DockPanel>
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource G.Shield}" Stroke="{StaticResource Ink2}" VerticalAlignment="Top" Margin="0,0,12,0" />
+                        <TextBlock Text="Folder asli belum diubah. Kalau kamu batalkan sekarang, salinan di tujuan dihapus dan semuanya kembali seperti semula."
+                                   Style="{StaticResource T.BodySm}" />
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <Border Style="{StaticResource Card}" Padding="24,20" Margin="0,24,0,0">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Small}" Content="Buka folder log" Command="{Binding OpenLog}" />
+                    <TextBlock Text="Log" Style="{StaticResource T.Subheading}" VerticalAlignment="Center" />
+                </DockPanel>
+                <Border Style="{StaticResource Well}">
+                    <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <TextBlock Text="{Binding LogText}" Style="{StaticResource T.Code}" Foreground="{StaticResource Ink2}" />
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,24,0,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Visibility="{Binding IsCopying, Converter={StaticResource BoolToVis}}">
+                    <Button Style="{StaticResource Btn.Danger}" Content="Batalkan" Command="{Binding CancelCopy}" Margin="0,0,8,0" />
+                    <Button Style="{StaticResource Btn}" Content="{Binding PauseLabel}" Command="{Binding TogglePause}" />
+                </StackPanel>
+                <TextBlock Text="{Binding CopyNote}" Style="{StaticResource T.BodySm}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,24,0" />
+            </DockPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

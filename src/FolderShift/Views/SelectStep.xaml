@@ -1,0 +1,229 @@
+<UserControl x:Class="FolderShift.Views.SelectStep"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:FolderShift">
+    <StackPanel>
+        <TextBlock Text="Pindah folder" Style="{StaticResource T.Title}" />
+        <TextBlock Style="{StaticResource T.Body}" MaxWidth="680" HorizontalAlignment="Left" Margin="0,6,0,24"
+                   Text="Pindahkan folder besar dari C ke drive lain. Aplikasi tetap membukanya dari lokasi lama lewat tautan, jadi tidak ada yang perlu kamu ubah di aplikasinya." />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.3*" />
+                <ColumnDefinition Width="24" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Kolom kiri: sumber, tujuan, metode -->
+            <StackPanel Grid.Column="0">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Folder sumber" Style="{StaticResource T.Heading}" />
+                        <TextBlock Text="Folder yang mau kamu pindahkan dari drive sistem." Style="{StaticResource T.Caption}" Margin="0,4,0,20" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Content="Pilih folder" Command="{Binding PickSource}" Margin="8,0,0,0" />
+                            <Border Style="{StaticResource PathBox}">
+                                <DockPanel>
+                                    <Path Style="{StaticResource Icon}" Data="{StaticResource G.Folder}" Stroke="{StaticResource Muted}" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding SourceText}" Style="{StaticResource T.Code}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </Border>
+                        </DockPanel>
+                        <WrapPanel Margin="0,20,0,0" Visibility="{Binding HasSource, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Margin="0,0,32,0">
+                                <TextBlock Text="UKURAN" Style="{StaticResource T.Overline}" />
+                                <TextBlock Text="{Binding SizeText}" Style="{StaticResource T.Subheading}" Margin="0,2,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,32,0">
+                                <TextBlock Text="ISI" Style="{StaticResource T.Overline}" />
+                                <TextBlock Text="{Binding ContentText}" Style="{StaticResource T.Subheading}" Margin="0,2,0,0" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="APLIKASI YANG MEMAKAI" Style="{StaticResource T.Overline}" />
+                                <TextBlock Text="{Binding UsedByText}" Style="{StaticResource T.Subheading}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,24,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Tujuan" Style="{StaticResource T.Heading}" />
+                        <TextBlock Text="Pilih drive, lalu folder tempat isinya disimpan." Style="{StaticResource T.Caption}" Margin="0,4,0,20" />
+                        <TextBlock Text="Drive" Style="{StaticResource T.Subheading}" Margin="0,0,0,10" />
+                        <ItemsControl ItemsSource="{Binding Drives}" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:DriveOption}">
+                                    <RadioButton Style="{StaticResource RadioCard}" GroupName="drive" Width="190" Margin="0,0,12,12"
+                                                 IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsEnabled}">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Title}" Style="{StaticResource T.Subheading}" />
+                                                <TextBlock Text="{Binding Name}" FontSize="14" Foreground="{StaticResource Muted}" Margin="6,0,0,0" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <ProgressBar x:Name="bar" Height="6" Maximum="100" Value="{Binding UsedPercent, Mode=OneWay}" Margin="0,8,0,8" />
+                                            <TextBlock Text="{Binding SpaceText}" Style="{StaticResource T.Caption}" />
+                                            <TextBlock x:Name="note" Text="{Binding Note}" Style="{StaticResource T.Caption}" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding NearlyFull}" Value="True">
+                                            <Setter TargetName="bar" Property="Foreground" Value="{StaticResource WarningDot}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding NoteIsWarning}" Value="True">
+                                            <Setter TargetName="note" Property="Foreground" Value="{StaticResource Warning}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Folder tujuan" Style="{StaticResource T.Subheading}" Margin="0,8,0,6" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Content="Ubah" Command="{Binding PickDestination}" Margin="8,0,0,0" />
+                            <Border Style="{StaticResource PathBox}">
+                                <DockPanel>
+                                    <Path Style="{StaticResource Icon}" Data="{StaticResource G.Folder}" Stroke="{StaticResource Muted}" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding DestinationText}" Style="{StaticResource T.Code}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </Border>
+                        </DockPanel>
+                        <TextBlock Text="Dibuat otomatis kalau belum ada. Ubah untuk memilih folder induk lain." Style="{StaticResource T.Caption}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,24,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Metode tautan" Style="{StaticResource T.Heading}" />
+                        <TextBlock Text="Cara Windows mengarahkan lokasi lama ke lokasi baru." Style="{StaticResource T.Caption}" Margin="0,4,0,16" />
+                        <RadioButton Style="{StaticResource RadioCard}" GroupName="kind" IsChecked="{Binding IsJunction}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Junction" Style="{StaticResource T.Subheading}" />
+                                    <Border Background="{StaticResource AccentSoft}" CornerRadius="10" Padding="8,1" Margin="8,0,0,0">
+                                        <TextBlock Text="Disarankan" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentInk}" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="Untuk folder di drive lokal. Paling kompatibel dengan aplikasi lama." Style="{StaticResource T.BodySm}" Margin="0,4,0,0" />
+                                <TextBlock Text="Tanpa hak Admin · Folder saja · Drive lokal" Style="{StaticResource T.Caption}" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource RadioCard}" GroupName="kind" IsChecked="{Binding IsSymlink}">
+                            <StackPanel>
+                                <TextBlock Text="Symbolic link" Style="{StaticResource T.Subheading}" />
+                                <TextBlock Text="Bisa mengarah ke drive jaringan dan ke file tunggal." Style="{StaticResource T.BodySm}" Margin="0,4,0,0" />
+                                <TextBlock Text="Perlu hak Admin · File dan folder · Lokal dan jaringan" Style="{StaticResource T.Caption}" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Kolom kanan: preview dan cek -->
+            <StackPanel Grid.Column="2">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Preview path" Style="{StaticResource T.Heading}" />
+                        <TextBlock Text="Begini susunannya setelah selesai." Style="{StaticResource T.Caption}" Margin="0,4,0,20" />
+
+                        <TextBlock Text="SEKARANG" Style="{StaticResource T.Overline}" Margin="0,0,0,8" />
+                        <Border Style="{StaticResource Well}">
+                            <DockPanel>
+                                <Border Style="{StaticResource IconTile}" Margin="0,0,12,0">
+                                    <Path Style="{StaticResource Icon}" Data="{StaticResource G.Folder}" Stroke="{StaticResource Ink2}" HorizontalAlignment="Center" />
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding SourceText}" Style="{StaticResource T.Code}" />
+                                    <TextBlock Text="{Binding SourceSummary}" Style="{StaticResource T.Caption}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="SETELAH DIPINDAH" Style="{StaticResource T.Overline}" Margin="0,20,0,8" />
+                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                            <DockPanel>
+                                <Border Style="{StaticResource IconTile}" Background="{StaticResource AccentSoft}" Margin="0,0,12,0">
+                                    <Path Style="{StaticResource Icon}" Data="{StaticResource G.Link}" Stroke="{StaticResource AccentInk}" HorizontalAlignment="Center" />
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding SourceText}" Style="{StaticResource T.Code}" />
+                                    <WrapPanel Margin="0,4,0,0">
+                                        <Border Background="{StaticResource AccentSoft}" CornerRadius="10" Padding="8,1" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding LinkName}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentInk}" />
+                                        </Border>
+                                        <TextBlock Text="0 byte. Aplikasi tetap membuka path ini." Style="{StaticResource T.Caption}" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Margin="22,8,0,8">
+                            <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.ArrowDown}" Stroke="{StaticResource Muted}" Margin="0,0,8,0" />
+                            <TextBlock Text="mengarah ke" Style="{StaticResource T.Caption}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Border Style="{StaticResource Well}">
+                            <DockPanel>
+                                <Border Style="{StaticResource IconTile}" Margin="0,0,12,0">
+                                    <Path Style="{StaticResource Icon}" Data="{StaticResource G.Drive}" Stroke="{StaticResource Ink2}" HorizontalAlignment="Center" />
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding DestinationText}" Style="{StaticResource T.Code}" />
+                                    <TextBlock Text="{Binding DestinationSummary}" Style="{StaticResource T.Caption}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Grid Margin="0,8,0,0">
+                            <Rectangle RadiusX="10" RadiusY="10" Stroke="{StaticResource LineDashed}" StrokeThickness="1" StrokeDashArray="4 3" Fill="{StaticResource Surface}" />
+                            <DockPanel Margin="14,12">
+                                <Border Style="{StaticResource IconTile}" Margin="0,0,12,0">
+                                    <Path Style="{StaticResource Icon}" Data="{StaticResource G.Archive}" Stroke="{StaticResource Ink2}" HorizontalAlignment="Center" />
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding BackupPath}" Style="{StaticResource T.Code}" />
+                                    <TextBlock Text="Cadangan sementara. Dihapus setelah kamu konfirmasi." Style="{StaticResource T.Caption}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Grid>
+
+                        <TextBlock Text="PERINTAH YANG DIJALANKAN" Style="{StaticResource T.Overline}" Margin="0,20,0,8" />
+                        <Border Style="{StaticResource Well}">
+                            <TextBox Text="{Binding CommandPreview, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0"
+                                     FontFamily="{StaticResource Mono}" FontSize="13" Foreground="{StaticResource Ink2}" TextWrapping="Wrap"
+                                     AutomationProperties.Name="Perintah yang dijalankan" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,24,0,0" Padding="24,24,24,10">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Small}" Command="{Binding Recheck}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Refresh}" Margin="0,0,8,0" />
+                                    <TextBlock Text="Cek ulang" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Text="Cek sebelum mulai" Style="{StaticResource T.Heading}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding Checks}" ItemTemplate="{StaticResource CheckRow}" Focusable="False" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,24,0,0">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Command="{Binding Start}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Mulai pindahkan" VerticalAlignment="Center" />
+                        <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.ArrowRight}" Margin="8,0,0,0" />
+                    </StackPanel>
+                </Button>
+                <TextBlock Text="Folder asli tidak diubah sampai kamu meninjau hasil salinan." Style="{StaticResource T.BodySm}"
+                           Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,24,0" />
+            </DockPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

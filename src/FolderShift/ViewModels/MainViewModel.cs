@@ -33,7 +33,9 @@ namespace FolderShift
 
         public int HistoryCount => AppState.History.Count;
         public bool IsAdmin => AppState.IsAdmin;
-        public string Version => "v" + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+        // InformationalVersion membawa akhiran pra-rilis (0.2.0-beta.1); bagian "+sha" dari SDK dibuang.
+        public string Version => "v" + Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.Split('+')[0];
 
         public bool ShowAttention => AppState.Settings.CheckOnOpen && !attentionDismissed && History.AttentionCount > 0 && current != History;
         public string AttentionText => History.AttentionCount + " tautan perlu perhatian. Aplikasi yang memakainya bisa tidak menemukan datanya.";

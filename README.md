@@ -1,121 +1,84 @@
-# Vibe Code Starter Pack
+# FolderShift
 
-Folder `.claude/` siap pakai untuk Claude Code. Isinya membuat Claude:
+Aplikasi desktop Windows untuk memindahkan folder besar dari drive sistem (C) ke drive lain tanpa merusak aplikasi yang memakainya. Isi folder disalin ke drive tujuan beserta permission-nya, lalu folder asli diganti dengan **junction** atau **symbolic link**. Aplikasi tetap membuka path lamanya seperti biasa.
 
-- menjawab singkat dan langsung ke inti (**caveman**),
-- menulis kode sesedikit mungkin dan memakai ulang yang sudah ada (**ponytail**),
-- menyusun jawaban yang gampang ditindaklanjuti (**i-have-adhd**),
-- memakai peta repo sebelum menjelajah kode (**graphify**),
-- tidak membaca file yang sama dua kali (**read-once**).
+## Unduh
 
-Semua skill dan script sudah ditanam di repo ini. Tidak perlu install plugin. Ketiga skill pertama otomatis aktif di setiap sesi, dan Claude selalu menjawab dalam Bahasa Indonesia.
+Ambil versi terbaru di halaman [Releases](../../releases/latest):
 
-## Isi
-
-| Path | Isi |
+| File | Isi |
 |---|---|
-| `.claude/skills/` | 24 skill: caveman (+15 turunannya), ponytail (+5), i-have-adhd, graphify |
-| `.claude/agents/` | 3 subagent cavecrew dari caveman |
-| `.claude/hooks/` | Hook milik starter pack: `session-start.sh`, `read-once-guard.sh` |
-| `.claude/caveman-hooks/`, `.claude/ponytail-hooks/`, `.claude/read-once-hooks/` | Hook bawaan tiap skill |
-| `.claude/settings.json` | Pendaftaran semua hook + setting default |
-| `.claude/licenses/` | Lisensi tiap sumber |
-| `CLAUDE.md` | Aturan cadangan kalau hook gagal |
-| `scripts/sync-skills`, `scripts/sources.txt` | Update skill dari repo aslinya |
-| `SOURCES.md` | Versi tiap sumber yang sedang ditanam |
+| `FolderShift-vX.Y.Z.exe` | Aplikasinya langsung, satu file |
+| `FolderShift-vX.Y.Z-win.zip` | Aplikasi + konfigurasi + lisensi font |
+| `SHA256SUMS.txt` | Checksum untuk mengecek unduhan |
 
-## Syarat di laptop
-
-| Program | Dipakai untuk | Kalau tidak ada |
-|---|---|---|
-| Git (Windows: Git for Windows, sudah termasuk Git Bash) | Semua hook bash | Hook tidak jalan |
-| Node.js | Hook bawaan caveman dan ponytail | Tetap aktif lewat `session-start.sh`, tapi tanpa fitur ganti mode dan statusline |
-| jq | read-once | Penahan baca ulang mati diam-diam |
-| Python 3.10+ dan pipx | graphify | Peta repo tidak tersedia |
-
-## Pasang sekali per laptop
-
-```bash
-# graphify (versi harus sama dengan SOURCES.md)
-pipx install graphifyy==0.9.90
-
-# jq
-brew install jq            # macOS (macOS 15 ke atas sudah punya)
-winget install jqlang.jq   # Windows
-sudo apt install jq        # Ubuntu/Debian
-```
-
-Belum punya pipx? macOS: `brew install pipx`. Ubuntu: `sudo apt install pipx`. Windows: `python -m pip install --user pipx` lalu `python -m pipx ensurepath`.
-
-## Pasang ke project
-
-**Project baru:** buat repo dari starter pack ini. Di GitHub, buka repo ini lalu klik **Use this template**. Kalau tombolnya belum ada, owner repo bisa menyalakannya di Settings → General → Template repository.
-
-**Project yang sudah ada:** salin ke root project:
-
-1. Folder `.claude/` dan `scripts/`, plus file `SOURCES.md`.
-2. Isi `CLAUDE.md`. Kalau project sudah punya CLAUDE.md, tempel di bagian paling atas.
-3. Isi `.gitignore`.
-
-Kalau project sudah punya `.claude/settings.json`, gabungkan isinya. Jangan ditimpa.
-
-Buka Claude Code di project itu, lalu setujui saat diminta mempercayai folder. Ketik `/hooks` untuk memastikan hook sudah terdaftar.
-
-## Pemakaian sehari-hari
-
-| Ketik | Hasil |
-|---|---|
-| `/caveman`, `/ultracave` | Mode singkat, atau mode paling singkat |
-| `stop caveman` | Matikan caveman di sesi ini |
-| `/ponytail lite`, `/ponytail full`, `/ponytail ultra` | Ganti tingkat "malas nulis kode" |
-| `stop ponytail` | Matikan ponytail di sesi ini |
-| `stop adhd mode` | Matikan i-have-adhd di sesi ini |
-| `/caveman-commit` | Pesan commit singkat |
-| `/caveman-review` | Review perubahan, satu baris per temuan |
-| `/ponytail-review` | Review perubahan: logika, keamanan, test, dan baris yang tidak perlu |
-| `/ponytail-audit` | Audit seluruh repo: bug, celah keamanan, kode tanpa test, bagian yang bisa dihapus |
-| `/ponytail-debt` | Daftar jalan pintas (`shortcut:`) yang sengaja ditunda |
-| `/caveman-stats` | Pemakaian token di sesi ini |
-| `/graphify .` | Bangun peta repo |
-
-Di sesi baru setelah `stop ...`, skill otomatis aktif lagi.
-
-## graphify
-
-Paling terasa manfaatnya di repo besar (sekitar 100 file atau lebih) yang dikerjakan berkali-kali. Di project kecil boleh dilewati.
-
-1. Di Claude Code, ketik `/graphify .` sekali. Kode dipetakan lokal tanpa biaya token. Dokumen, PDF, dan gambar dibaca lewat Claude, jadi makan token.
-2. Supaya peta ikut diperbarui tiap commit, jalankan `graphify hook install` di terminal, sekali per clone. Perintah ini juga menambah satu baris di `.gitattributes`, dan baris itu boleh ikut di-commit.
-3. Mulai sesi berikutnya, Claude otomatis mendapat ringkasan peta. Claude juga diingatkan memakai `graphify query` sebelum grep atau membaca file.
-
-Folder `graphify-out/` tidak di-commit. Tiap laptop membangun petanya sendiri, jadi tidak ada konflik merge. Lihat komentar di `.gitignore` kalau repo kalian banyak dokumen.
+Syarat: Windows 10 atau 11 dengan .NET Framework 4.8 (sudah bawaan Windows). Aplikasi selalu meminta hak Administrator lewat UAC.
 
 ## Cara kerja
 
-| Kapan | Hook | Fungsi |
+1. **Pilih folder.** Pilih folder sumber, drive tujuan, dan metode tautan. Aplikasi menampilkan preview path, perintah yang akan dijalankan, dan cek awal: ruang cukup, hak Administrator, aplikasi yang masih memakai folder, dan folder sistem yang tidak boleh dipindah.
+2. **Salin.** `robocopy /E /COPYALL /DCOPY:DAT /B /XJ` menyalin isi, ACL, owner, atribut, dan timestamp. Bisa dijeda atau dibatalkan. Kalau dibatalkan atau gagal, salinan di tujuan dihapus dan folder asli tidak berubah.
+3. **Tinjau.** Setiap file sumber dicocokkan dengan tujuan (ukuran, waktu ubah, atribut, atau hash SHA-256 kalau diatur). Permission folder induk dibandingkan, dan bisa disamakan dengan sumber kalau berbeda.
+4. **Ganti.** Folder asli diganti nama jadi `.bak`, tautan dibuat dengan `mklink /J` atau `mklink /D`, lalu tiga file acak dibaca lewat tautan. Kalau salah satu langkah gagal, semuanya dikembalikan.
+5. **Selesai.** Cadangan `.bak` dihapus setelah kamu konfirmasi, atau dikembalikan ke lokasi asal.
+
+**Riwayat** mencatat semua folder yang pernah dipindah, mengecek kesehatan tautannya, dan bisa mengembalikan folder ke lokasi asal kapan saja. **Pengaturan** menyimpan folder induk tujuan, metode bawaan, kebijakan cadangan, dan tingkat verifikasi.
+
+Data aplikasi ada di `%ProgramData%\FolderShift`: `settings.json`, `history.json`, dan `logs\` (satu log per pemindahan, disimpan 90 hari).
+
+### Junction atau symbolic link?
+
+| | Junction | Symbolic link |
 |---|---|---|
-| Sesi mulai, resume, `/clear`, dan setelah compact | `hooks/session-start.sh` | Bahasa Indonesia, i-have-adhd, aturan gabungan, ringkasan graphify. Tanpa Node, ikut menyuntik caveman dan ponytail |
-| | `caveman-hooks/caveman-activate.js` | Menyuntik skill caveman |
-| | `ponytail-hooks/ponytail-activate.js` | Menyuntik skill ponytail level full. Peta bawaannya dimatikan (`PONYTAIL_MAP=0`) karena sudah ada graphify |
-| Subagent mulai | hook subagent caveman dan ponytail | Subagent ikut aturan yang sama |
-| Setiap prompt | mode tracker caveman dan ponytail | Mencatat ganti mode seperti `/ultracave` atau `stop caveman` |
-| Sebelum Read | `hooks/read-once-guard.sh` | Menolak baca ulang file yang belum berubah. Kalau file berubah, Claude hanya diberi diff-nya. Catatan baca dipisah per subagent |
-| Sebelum Read, Glob, Grep, Bash | `graphify hook-guard` | Mengingatkan Claude memakai peta, kalau peta ada |
-| Setelah compact | `read-once-hooks/compact.sh` | Mengosongkan catatan baca, karena isi file sudah hilang dari context |
-| Sesi selesai | `caveman-stats.js --record` | Mencatat statistik token |
+| Target | Folder saja | File dan folder |
+| Lokasi target | Drive lokal | Lokal dan jaringan (UNC) |
+| Hak Admin untuk membuat | Tidak perlu | Perlu, atau Developer Mode |
+| Kompatibilitas aplikasi lama | Sangat baik | Kadang bermasalah |
 
-## Update skill
+Untuk memindah dari C ke drive lokal lain, junction adalah pilihan bawaan.
 
-1. Ubah versi di `scripts/sources.txt`. Pakai tag, branch, atau commit SHA.
-2. Jalankan `bash scripts/sync-skills`. Hanya butuh bash dan git.
-3. Kalau versi graphify berubah, script otomatis menyamakan baris `pipx install` di README ini. Minta tim menjalankan `pipx install --force graphifyy==<versi baru>`.
-4. Cek perubahan dengan `git diff`, lalu commit.
+## Build
 
-Script hanya menghapus dan menulis ulang path yang tercatat di `.claude/.vendored`, jadi file milik project sendiri di `.claude/` aman.
+```powershell
+dotnet test tests/FolderShift.Tests -c Release
+dotnet build src/FolderShift -c Release
+```
 
-## Catatan
+Hasilnya `src/FolderShift/bin/Release/net48/FolderShift.exe`. Butuh .NET SDK 8 di Windows. Proyek memakai WPF di .NET Framework 4.8 supaya aplikasi jalan tanpa memasang runtime tambahan.
 
-- **Statusline:** di sesi pertama, caveman dan ponytail masing-masing menawarkan badge statusline. Claude Code hanya bisa memakai satu statusline, jadi pilih salah satu atau tolak dua-duanya. Tawarannya tidak diulang.
-- **Yang sengaja tidak ditanam:** skill caveman untuk Caveman Cloud (`caveman-setup`, `caveman-discover`, `caveman-learn`, `caveman-manage`, `caveman-optimize`, `caveman-evidence-review`). Semuanya butuh layanan berbayar, dan `caveman-setup` mengalihkan request LLM repo ke gateway mereka. Hook always-on bawaan i-have-adhd juga tidak dipakai, karena perannya sudah diambil `session-start.sh`.
-- **Sesi headless** (`claude -p`, Agent SDK): caveman sengaja tidak aktif di sesi ini, sesuai aturan bawaannya.
-- **Lisensi:** caveman dan graphify memakai Apache-2.0. ponytail, i-have-adhd, dan read-once memakai MIT. Teks lengkapnya ada di `.claude/licenses/`, rinciannya di `SOURCES.md`.
+| Path | Isi |
+|---|---|
+| `src/FolderShift/Core/` | Logika: robocopy, verifikasi, ACL, tautan, riwayat, pengaturan |
+| `src/FolderShift/ViewModels/` | State dan perintah tiap layar |
+| `src/FolderShift/Views/`, `MainWindow.xaml` | Tampilan XAML |
+| `src/FolderShift/Themes/Theme.xaml` | Token warna, tipografi, dan komponen dari design system Alphanusa Account |
+| `tests/FolderShift.Tests/` | Test untuk parser robocopy, aturan keamanan path, dan format angka |
+
+## Rilis otomatis
+
+Setiap push ke `master` menjalankan `.github/workflows/release.yml`:
+
+1. `scripts/next-version.sh` menghitung versi baru dari pesan commit sejak tag `v*` terakhir, mengikuti [Conventional Commits](https://www.conventionalcommits.org/):
+   - `feat:` menaikkan minor, `fix:` dan `perf:` menaikkan patch.
+   - `feat!:` atau `BREAKING CHANGE` menaikkan major (minor selama versi masih 0.x).
+   - `docs:`, `chore:`, `ci:`, `refactor:`, `test:` tidak membuat rilis.
+2. Aplikasi dites dan di-build di Windows dengan versi itu.
+3. Tag `vX.Y.Z` dan GitHub Release dibuat, berisi `.exe`, `.zip`, dan `SHA256SUMS.txt`.
+
+Kalau PR di-merge dengan squash, judul PR menjadi pesan commit, jadi tulis judul PR dengan format yang sama (misalnya `feat: tambah filter riwayat`).
+
+Pull request dan push ke branch lain menjalankan `.github/workflows/ci.yml` (test + build, exe diunggah sebagai artifact).
+
+## Untuk developer
+
+Repo ini memakai Vibe Code Starter Pack di `.claude/`. Aturannya ada di `CLAUDE.md`, penjelasan lengkapnya di [docs/STARTER-PACK.md](docs/STARTER-PACK.md), dan versi tiap sumber di `SOURCES.md`.
+
+Peta repo (opsional) memakai graphify:
+
+```bash
+pipx install graphifyy==0.9.90
+```
+
+## Lisensi font
+
+IBM Plex Sans dan IBM Plex Mono dipakai di bawah SIL Open Font License 1.1. Teksnya ada di `src/FolderShift/Fonts/OFL.txt`.

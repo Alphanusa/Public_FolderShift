@@ -1,0 +1,135 @@
+<UserControl x:Class="FolderShift.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel MaxWidth="760" Margin="24,32,24,64">
+            <TextBlock Text="Pengaturan" Style="{StaticResource T.Title}" />
+            <TextBlock Text="Nilai bawaan untuk setiap pemindahan baru. Perubahan langsung disimpan." Style="{StaticResource T.Body}" Margin="0,6,0,24" />
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Tujuan bawaan" Style="{StaticResource T.Heading}" Margin="0,0,0,20" />
+                    <TextBlock Text="Folder induk" Style="{StaticResource T.Subheading}" Margin="0,0,0,6" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Content="Ubah" Command="{Binding PickRoot}" Margin="8,0,0,0" />
+                        <Border Style="{StaticResource PathBox}">
+                            <DockPanel>
+                                <Path Style="{StaticResource Icon}" Data="{StaticResource G.Folder}" Stroke="{StaticResource Muted}" Margin="0,0,10,0" />
+                                <TextBlock Text="{Binding DestinationRoot}" Style="{StaticResource T.Code}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource T.Caption}" Margin="0,6,0,20">
+                        <Run Text="Setiap folder disimpan di sini dengan namanya sendiri, misalnya" />
+                        <Run Text="{Binding RootExample, Mode=OneWay}" FontFamily="{StaticResource Mono}" /><Run Text=". Huruf drive mengikuti drive yang kamu pilih saat memindahkan." />
+                    </TextBlock>
+
+                    <TextBlock Text="Metode tautan" Style="{StaticResource T.Subheading}" Margin="0,0,0,10" />
+                    <RadioButton Style="{StaticResource RadioCard}" GroupName="kind" IsChecked="{Binding IsJunction}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Junction" Style="{StaticResource T.Subheading}" />
+                                <Border Background="{StaticResource AccentSoft}" CornerRadius="10" Padding="8,1" Margin="8,0,0,0">
+                                    <TextBlock Text="Disarankan" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentInk}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Untuk folder di drive lokal. Tidak perlu hak Admin." Style="{StaticResource T.Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource RadioCard}" GroupName="kind" IsChecked="{Binding IsSymlink}">
+                        <StackPanel>
+                            <TextBlock Text="Symbolic link" Style="{StaticResource T.Subheading}" />
+                            <TextBlock Text="Bisa ke drive jaringan dan file tunggal. Perlu hak Admin." Style="{StaticResource T.Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,24,0,0">
+                <StackPanel>
+                    <TextBlock Text="Cadangan" Style="{StaticResource T.Heading}" />
+                    <TextBlock Text="Folder asli yang diganti nama jadi .bak setelah tautan dibuat." Style="{StaticResource T.Caption}" Margin="0,4,0,16" />
+                    <RadioButton Style="{StaticResource RadioCard}" GroupName="backup" IsChecked="{Binding IsKeepBackup}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Simpan sampai aku hapus" Style="{StaticResource T.Subheading}" />
+                                <Border Background="{StaticResource AccentSoft}" CornerRadius="10" Padding="8,1" Margin="8,0,0,0">
+                                    <TextBlock Text="Disarankan" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentInk}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Kamu yang memutuskan kapan cadangan dihapus, dari layar Selesai atau Riwayat." Style="{StaticResource T.Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource RadioCard}" GroupName="backup" IsChecked="{Binding IsAutoDelete}">
+                        <StackPanel>
+                            <TextBlock Text="Hapus otomatis setelah 7 hari" Style="{StaticResource T.Subheading}" />
+                            <TextBlock Text="Dihapus saat aplikasi dibuka, kalau sudah lewat 7 hari dan tautannya tetap sehat." Style="{StaticResource T.Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,24,0,0">
+                <StackPanel>
+                    <TextBlock Text="Verifikasi" Style="{StaticResource T.Heading}" />
+                    <TextBlock Text="Cara memastikan salinan di tujuan sama dengan sumber sebelum folder asli diganti." Style="{StaticResource T.Caption}" Margin="0,4,0,16" />
+                    <RadioButton Style="{StaticResource RadioCard}" GroupName="verify" IsChecked="{Binding IsVerifySize}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Ukuran, waktu, dan atribut" Style="{StaticResource T.Subheading}" />
+                                <Border Background="{StaticResource AccentSoft}" CornerRadius="10" Padding="8,1" Margin="8,0,0,0">
+                                    <TextBlock Text="Cepat" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentInk}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Cukup untuk hampir semua kasus. Selesai dalam hitungan detik sampai menit." Style="{StaticResource T.Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource RadioCard}" GroupName="verify" IsChecked="{Binding IsVerifyHash}">
+                        <StackPanel>
+                            <TextBlock Text="Hash setiap file" Style="{StaticResource T.Subheading}" />
+                            <TextBlock Text="Paling yakin isinya identik, tapi bisa memakan waktu sama lamanya dengan proses salin." Style="{StaticResource T.Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <Border BorderBrush="{StaticResource LineSubtle}" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,16,0,0">
+                        <CheckBox IsChecked="{Binding CompareAcl}">
+                            <StackPanel>
+                                <TextBlock Text="Bandingkan permission (ACL)" Style="{StaticResource T.Subheading}" />
+                                <TextBlock Text="Perbedaan ACL antara sumber dan tujuan ditampilkan di layar tinjauan." Style="{StaticResource T.Caption}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,24,0,0">
+                <StackPanel>
+                    <TextBlock Text="Pemantauan tautan" Style="{StaticResource T.Heading}" Margin="0,0,0,8" />
+                    <DockPanel>
+                        <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding CheckOnOpen}"
+                                  AutomationProperties.Name="Cek tautan saat aplikasi dibuka" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Cek tautan saat aplikasi dibuka" Style="{StaticResource T.Subheading}" />
+                            <TextBlock Text="Kalau ada tautan putus, muncul peringatan di bagian atas aplikasi." Style="{StaticResource T.Caption}" />
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,24,0,0">
+                <StackPanel>
+                    <TextBlock Text="Log" Style="{StaticResource T.Heading}" Margin="0,0,0,12" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Command="{Binding OpenLogs}" Margin="8,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon.Small}" Data="{StaticResource G.Folder}" Margin="0,0,8,0" />
+                                <TextBlock Text="Buka folder" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="{Binding LogDir}" Style="{StaticResource T.Code}" Foreground="{StaticResource Ink2}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <TextBlock Text="Satu file per pemindahan, berisi perintah yang dijalankan dan hasilnya. Disimpan 90 hari." Style="{StaticResource T.Caption}" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

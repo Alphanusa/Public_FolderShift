@@ -1,0 +1,14 @@
+<UserControl x:Class="FolderShift.Views.BusyOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Visibility="{Binding ShowBusy, Converter={StaticResource BoolToVis}}">
+    <!-- Menahan klik selama pekerjaan yang mengubah folder berjalan. -->
+    <Grid Background="#B3EAF4F5">
+        <Border Style="{StaticResource Card}" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420" Padding="24,20">
+            <StackPanel>
+                <TextBlock Text="{Binding BusyText}" Style="{StaticResource T.Subheading}" TextAlignment="Center" />
+                <TextBlock Text="Jangan tutup aplikasi sampai selesai." Style="{StaticResource T.Caption}" TextAlignment="Center" Margin="0,4,0,0" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

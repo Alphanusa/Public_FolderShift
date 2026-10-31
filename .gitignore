@@ -1,0 +1,14 @@
+# Setting pribadi Claude Code, bukan untuk tim.
+.claude/settings.local.json
+
+# graphify: tiap laptop membangun petanya sendiri (cepat dan gratis untuk kode).
+graphify-out/
+
+# Repo kalian banyak dokumen, PDF, atau gambar? Hapus baris "graphify-out/"
+# di atas dan buka komentar 4 baris di bawah. Hasil baca dokumen oleh Claude
+# (yang bayar token) ikut di-commit, jadi tim tidak membayarnya dua kali.
+# Risiko konfliknya kecil karena satu file per dokumen.
+# graphify-out/*
+# !graphify-out/cache/
+# graphify-out/cache/*
+# !graphify-out/cache/semantic*/

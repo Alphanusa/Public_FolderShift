@@ -1,0 +1,12 @@
+# Versi tiap skill/hook yang ditanam di .claude/.
+# Format: <nama> <owner/repo di GitHub> <tag, branch, atau commit SHA>
+# Ganti kolom ketiga, lalu jalankan: bash scripts/sync-skills
+#
+# Catatan graphify: versi di sini HARUS sama dengan versi paket pip-nya
+# (graphifyy). sync-skills otomatis menyamakan baris install di README.md.
+
+caveman      JuliusBrussee/caveman            v4.0.1
+ponytail     DietrichGebert/ponytail          v5.2.0
+i-have-adhd  ayghri/i-have-adhd               1ecea1993b7fce257ffbd686c070948b5e07eda6
+graphify     safishamsi/graphify              v0.9.90
+read-once    Bande-a-Bonnot/Boucle-framework  v0.13.0

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "PONYTAIL_DEFAULT_MODE": "full",
+    "PONYTAIL_MAP": "0",
+    "READ_ONCE_MODE": "deny",
+    "READ_ONCE_DIFF": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(graphify query:*)",
+      "Bash(graphify path:*)",
+      "Bash(graphify explain:*)",
+      "Bash(graphify update:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
+            "timeout": 10,
+            "statusMessage": "Memuat aturan starter pack..."
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"$CLAUDE_PROJECT_DIR/.claude/caveman-hooks/caveman-activate.js\"",
+            "timeout": 30,
+            "statusMessage": "Loading caveman mode..."
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"$CLAUDE_PROJECT_DIR/.claude/ponytail-hooks/ponytail-activate.js\"",
+            "timeout": 10,
+            "statusMessage": "Loading ponytail mode..."
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"$CLAUDE_PROJECT_DIR/.claude/caveman-hooks/caveman-activate.js\" --subagent",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"$CLAUDE_PROJECT_DIR/.claude/ponytail-hooks/ponytail-subagent.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"$CLAUDE_PROJECT_DIR/.claude/caveman-hooks/caveman-mode-tracker.js\"",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"$CLAUDE_PROJECT_DIR/.claude/ponytail-hooks/ponytail-mode-tracker.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"$CLAUDE_PROJECT_DIR/.claude/caveman-hooks/caveman-stats.js\" --record",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/read-once-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/graphify-out/graph.json\" ] && command -v graphify >/dev/null 2>&1 || exit 0; graphify hook-guard search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/graphify-out/graph.json\" ] && command -v graphify >/dev/null 2>&1 || exit 0; graphify hook-guard read",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null 2>&1 || exit 0; bash \"$CLAUDE_PROJECT_DIR/.claude/read-once-hooks/compact.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

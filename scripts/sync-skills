@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+# sync-skills: tanam ulang skill & hook dari repo aslinya ke .claude/
+#
+#   bash scripts/sync-skills
+#
+# Butuh bash + git saja. Versi tiap sumber diatur di scripts/sources.txt.
+# Semua path yang ditulis script ini dicatat di .claude/.vendored. Sync
+# berikutnya hanya menghapus path di catatan itu, jadi file milik project
+# sendiri di .claude/ tidak pernah ikut terhapus.
+
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+CLAUDE="$ROOT/.claude"
+SOURCES="$ROOT/scripts/sources.txt"
+MANIFEST="$CLAUDE/.vendored"
+
+# Skill caveman yang hanya berguna dengan Caveman Cloud (layanan berbayar).
+# caveman-setup bahkan mengalihkan request LLM repo ke gateway mereka.
+CAVEMAN_SKIP="caveman-discover caveman-evidence-review caveman-learn caveman-manage caveman-optimize caveman-setup"
+
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+OUT="$WORK/out"
+NEW_MANIFEST="$WORK/manifest"
+ROWS="$WORK/rows"
+mkdir -p "$OUT"
+: > "$NEW_MANIFEST"
+: > "$ROWS"
+GRAPHIFY_VERSION=""
+
+die() { echo "sync-skills: $*" >&2; exit 1; }
+
+# fetch <nama> <owner/repo> <ref>: checkout dangkal, cetak path-nya.
+fetch() {
+  local dir="$WORK/src/$1"
+  mkdir -p "$dir"
+  git -C "$dir" init -q
+  git -C "$dir" fetch -q --depth 1 "https://github.com/$2.git" "$3" </dev/null || die "gagal mengambil $2@$3"
+  git -C "$dir" checkout -q FETCH_HEAD
+  echo "| $1 | [$2](https://github.com/$2) | \`$3\` | \`$(git -C "$dir" rev-parse --short=12 HEAD)\` |" >> "$ROWS"
+  printf '%s\n' "$dir"
+}
+
+# stage <sumber> <path relatif .claude>: siapkan di $OUT, catat di manifest.
+stage() {
+  [ -e "$1" ] || die "tidak ada di upstream: $1"
+  if grep -qxF "$2" "$NEW_MANIFEST"; then die "bentrok: .claude/$2 ditulis dua sumber"; fi
+  mkdir -p "$(dirname "$OUT/$2")"
+  cp -R "$1" "$OUT/$2"
+  echo "$2" >> "$NEW_MANIFEST"
+}
+
+# license <nama> <checkout> <file...>: salin file lisensi ke licenses/<nama>.
+license() {
+  local name=$1 src=$2 f
+  shift 2
+  mkdir -p "$WORK/lic/$name"
+  for f in "$@"; do cp "$src/$f" "$WORK/lic/$name/"; done
+  stage "$WORK/lic/$name" "licenses/$name"
+}
+
+# skills_from <checkout> [skip...]: tiap folder skills/* yang punya SKILL.md.
+skills_from() {
+  local src=$1 d n
+  shift
+  for d in "$src"/skills/*/; do
+    d=${d%/}
+    n=$(basename "$d")
+    [ -f "$d/SKILL.md" ] || continue
+    case " $* " in *" $n "*) continue ;; esac
+    stage "$d" "skills/$n"
+  done
+}
+
+stage_caveman() {
+  local f h="$WORK/caveman-hooks"
+  skills_from "$1" $CAVEMAN_SKIP
+  for f in "$1"/agents/cavecrew-*.md; do stage "$f" "agents/$(basename "$f")"; done
+  mkdir -p "$h"
+  cp "$1"/src/hooks/*.js "$1"/src/hooks/caveman-statusline.* "$1"/src/hooks/package.json "$1"/src/hooks/README.md "$h/"
+  stage "$h" caveman-hooks
+  license caveman "$1" LICENSE LICENSE-MIT NOTICE LICENSING.md TRADEMARKS.md
+}
+
+stage_ponytail() {
+  local h="$WORK/ponytail-hooks"
+  skills_from "$1"
+  mkdir -p "$h"
+  cp "$1"/hooks/*.js "$1"/hooks/ponytail-statusline.* "$h/"
+  # Hook ponytail pakai require(). Tanpa ini, project yang package.json-nya
+  # "type": "module" membuat Node membaca hook sebagai ESM dan crash.
+  printf '{\n  "type": "commonjs"\n}\n' > "$h/package.json"
+  stage "$h" ponytail-hooks
+  license ponytail "$1" LICENSE
+}
+
+stage_adhd() {
+  mkdir -p "$WORK/i-have-adhd"
+  cp "$1/skills/i-have-adhd/SKILL.md" "$WORK/i-have-adhd/"
+  stage "$WORK/i-have-adhd" skills/i-have-adhd
+  license i-have-adhd "$1" LICENSE
+}
+
+stage_graphify() {
+  local s="$WORK/graphify"
+  mkdir -p "$s"
+  cp "$1/graphify/skill.md" "$s/SKILL.md"
+  cp -R "$1/graphify/skills/claude/references" "$s/references"
+  stage "$s" skills/graphify
+  license graphify "$1" LICENSE LICENSE-MIT NOTICE
+  GRAPHIFY_VERSION=$(sed -n 's/^version *= *"\(.*\)"/\1/p' "$1/pyproject.toml" | head -1)
+}
+
+stage_read_once() {
+  local h="$WORK/read-once-hooks"
+  mkdir -p "$h"
+  cp "$1"/tools/read-once/hook.sh "$1"/tools/read-once/compact.sh "$1"/tools/read-once/README.md "$h/"
+  stage "$h" read-once-hooks
+  license read-once "$1" LICENSE
+}
+
+# 1. Ambil semua sumber dan siapkan hasilnya di folder sementara.
+while read -r name repo ref <&3; do
+  case "$name" in '' | \#*) continue ;; esac
+  [ -n "$ref" ] || die "baris '$name' di sources.txt tidak lengkap"
+  echo "ambil $name ($repo@$ref)"
+  src=$(fetch "$name" "$repo" "$ref")
+  case "$name" in
+    caveman) stage_caveman "$src" ;;
+    ponytail) stage_ponytail "$src" ;;
+    i-have-adhd) stage_adhd "$src" ;;
+    graphify) stage_graphify "$src" ;;
+    read-once) stage_read_once "$src" ;;
+    *) die "sumber tidak dikenal: $name" ;;
+  esac
+done 3< "$SOURCES"
+
+# Folder tests/ di skill hanya untuk pengembang upstream.
+find "$OUT/skills" -type d -name tests -prune -exec rm -rf {} +
+
+# 2. Jangan menimpa file milik project yang kebetulan bernama sama.
+OLD="$WORK/old"
+if [ -f "$MANIFEST" ]; then cp "$MANIFEST" "$OLD"; else : > "$OLD"; fi
+while IFS= read -r rel; do
+  if [ -e "$CLAUDE/$rel" ] && ! grep -qxF "$rel" "$OLD"; then
+    die ".claude/$rel sudah ada tapi bukan hasil sync. Pindahkan dulu, lalu ulangi."
+  fi
+done < "$NEW_MANIFEST"
+
+# 3. Hapus hasil sync lama, pasang yang baru.
+while IFS= read -r rel; do
+  case "$rel" in '' | /* | *..*) continue ;; esac
+  rm -rf "${CLAUDE:?}/$rel"
+done < "$OLD"
+while IFS= read -r rel; do
+  mkdir -p "$(dirname "$CLAUDE/$rel")"
+  cp -R "$OUT/$rel" "$CLAUDE/$rel"
+done < "$NEW_MANIFEST"
+sort "$NEW_MANIFEST" > "$MANIFEST"
+
+# 4. Samakan versi pip graphify di README dengan SKILL.md yang ditanam.
+if [ -n "$GRAPHIFY_VERSION" ] && [ -f "$ROOT/README.md" ]; then
+  sed -i.bak "s/graphifyy==[0-9][0-9.]*/graphifyy==$GRAPHIFY_VERSION/g" "$ROOT/README.md"
+  rm -f "$ROOT/README.md.bak"
+fi
+
+# 5. Tulis ulang SOURCES.md.
+cat > "$ROOT/SOURCES.md" <<EOF
+# Sumber skill & hook
+
+File ini dibuat otomatis oleh \`scripts/sync-skills\`. Jangan diedit manual.
+Untuk ganti versi, ubah \`scripts/sources.txt\` lalu jalankan \`bash scripts/sync-skills\`.
+
+Terakhir sync: $(date +%Y-%m-%d)
+
+| Nama | Repo | Versi | Commit |
+|---|---|---|---|
+$(cat "$ROWS")
+
+Paket pip graphify yang cocok: \`graphifyy==${GRAPHIFY_VERSION:-?}\`
+
+## Yang ditanam
+
+| Sumber | Masuk ke | Catatan |
+|---|---|---|
+| caveman | \`.claude/skills/\`, \`.claude/agents/cavecrew-*.md\`, \`.claude/caveman-hooks/\` | Skill Caveman Cloud tidak ikut: $(echo "$CAVEMAN_SKIP" | sed 's/ /, /g') |
+| ponytail | \`.claude/skills/ponytail*\`, \`.claude/ponytail-hooks/\` | \`package.json\` di folder hook ditambahkan sync agar selalu CommonJS |
+| i-have-adhd | \`.claude/skills/i-have-adhd/\` | Hook always-on bawaannya tidak dipakai; diganti \`.claude/hooks/session-start.sh\` |
+| graphify | \`.claude/skills/graphify/\` | Hanya skill. Programnya dipasang lewat pip |
+| read-once | \`.claude/read-once-hooks/\` | Dipanggil lewat \`.claude/hooks/read-once-guard.sh\` |
+
+Daftar lengkap path hasil sync ada di \`.claude/.vendored\`.
+
+## Lisensi
+
+| Sumber | Lisensi | Teks lengkap |
+|---|---|---|
+| caveman | Apache-2.0 (sebagian kode lama MIT) | \`.claude/licenses/caveman/\` |
+| ponytail | MIT | \`.claude/licenses/ponytail/\` |
+| i-have-adhd | MIT | \`.claude/licenses/i-have-adhd/\` |
+| graphify | Apache-2.0 (sebagian kode lama MIT) | \`.claude/licenses/graphify/\` |
+| read-once (Boucle-framework) | MIT | \`.claude/licenses/read-once/\` |
+
+File dari sumber di atas disalin tanpa diubah. "Caveman" adalah merek dagang
+Julius Brussee; starter pack ini tidak berafiliasi dengan pembuat mana pun.
+EOF
+
+echo "selesai: $(wc -l < "$MANIFEST" | tr -d ' ') path di .claude/ (lihat SOURCES.md)"

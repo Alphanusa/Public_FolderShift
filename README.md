@@ -8,9 +8,9 @@ Ambil versi terbaru di halaman [Releases](../../releases/latest):
 
 | File | Isi |
 |---|---|
-| `FolderShift-vX.Y.Z.exe` | Aplikasinya langsung, satu file |
+| `FolderShift-vX.Y.Z.exe` | Aplikasinya langsung, satu file. Versi `-alpha`/`-beta`/`-rc` ditandai pre-release |
 | `FolderShift-vX.Y.Z-win.zip` | Aplikasi + konfigurasi + lisensi font |
-| `SHA256SUMS.txt` | Checksum untuk mengecek unduhan |
+| `SHA256SUMS` | Checksum untuk mengecek unduhan |
 
 Syarat: Windows 10 atau 11 dengan .NET Framework 4.8 (sudah bawaan Windows). Aplikasi selalu meminta hak Administrator lewat UAC.
 
@@ -54,20 +54,17 @@ Hasilnya `src/FolderShift/bin/Release/net48/FolderShift.exe`. Butuh .NET SDK 8 d
 | `src/FolderShift/Themes/Theme.xaml` | Token warna, tipografi, dan komponen dari design system Alphanusa Account |
 | `tests/FolderShift.Tests/` | Test untuk parser robocopy, aturan keamanan path, dan format angka |
 
-## Rilis otomatis
+## Rilis
 
-Setiap push ke `master` menjalankan `.github/workflows/release.yml`:
+Rilis berbasis tag dan dijalankan manual, sama seperti repo Alphanusa lain. Merge ke `master` tidak merilis apa pun.
 
-1. `scripts/next-version.sh` menghitung versi baru dari pesan commit sejak tag `v*` terakhir, mengikuti [Conventional Commits](https://www.conventionalcommits.org/):
-   - `feat:` menaikkan minor, `fix:` dan `perf:` menaikkan patch.
-   - `feat!:` atau `BREAKING CHANGE` menaikkan major (minor selama versi masih 0.x).
-   - `docs:`, `chore:`, `ci:`, `refactor:`, `test:` tidak membuat rilis.
-2. Aplikasi dites dan di-build di Windows dengan versi itu.
-3. Tag `vX.Y.Z` dan GitHub Release dibuat, berisi `.exe`, `.zip`, dan `SHA256SUMS.txt`.
+1. Buka Actions → **Release** → Run workflow.
+2. Pilih `level` (`-`, `patch`, `minor`, `major`) dan `maturity` (`-`, `alpha`, `beta`, `rc`). `dry_run` menyala secara default: baca rencananya dulu di ringkasan run.
+3. Jalankan ulang dengan `dry_run` mati. Workflow menjalankan test, memotong tag `vX.Y.Z`, build exe di Windows, lalu menerbitkan GitHub Release.
 
-Kalau PR di-merge dengan squash, judul PR menjadi pesan commit, jadi tulis judul PR dengan format yang sama (misalnya `feat: tambah filter riwayat`).
+Dari laptop: `scripts/release.sh minor` (rencana saja) atau `scripts/release.sh minor --push`. Kebijakan lengkap, kombinasi level × kematangan, dan hotfix ada di [docs/RILIS.md](docs/RILIS.md).
 
-Pull request dan push ke branch lain menjalankan `.github/workflows/ci.yml` (test + build, exe diunggah sebagai artifact).
+Pull request dan push ke branch selain `master` menjalankan `.github/workflows/ci.yml` (test + build, exe diunggah sebagai artifact).
 
 ## Untuk developer
 

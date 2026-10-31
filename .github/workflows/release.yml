@@ -1,44 +1,57 @@
+# Tag-based releases. A release tag is the only thing that reaches users;
+# nothing here runs on a merge. See docs/RILIS.md for the policy.
 name: Release
 
-# Setiap push ke master dicek: kalau ada commit feat/fix/perf/breaking sejak tag terakhir,
-# versi baru dihitung (semver), aplikasi di-build dan dites, lalu hasilnya dirilis di GitHub Releases.
 on:
-  push:
-    branches: [master]
+  # The form. Tests, computes the version, cuts the tag, then builds via needs:.
   workflow_dispatch:
+    inputs:
+      level:
+        description: 'Bump. "-" = no bump: continue or promote an open pre-release.'
+        type: choice
+        options: ['-', patch, minor, major]
+        default: '-'
+      maturity:
+        description: 'Pre-release maturity. "-" = final release.'
+        type: choice
+        options: ['-', alpha, beta, rc]
+        default: '-'
+      ref:
+        description: 'Branch, tag or SHA to release from. Empty = the ref picked above.'
+        type: string
+        default: ''
+      dry_run:
+        description: 'Print the plan and create nothing.'
+        type: boolean
+        default: true
 
-permissions:
-  contents: write
+  # The CLI path. `scripts/release.sh --push` from a laptop pushes the tag with a
+  # human credential, which DOES fire this trigger — unlike the tag the form
+  # pushes with GITHUB_TOKEN, which fires nothing. Without this trigger a laptop
+  # release would publish a tag and never build the exe.
+  push:
+    tags: ['v*']
 
+# One lane repo-wide: the version is derived from the tag set, so two
+# concurrent runs would race for the same number.
 concurrency:
   group: release
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
-  version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.next.outputs.version }}
+  # ── Gate: a failing tree cannot be tagged ──────────────────────────────────
+  # Tests need Windows (WPF on .NET Framework), the tag script needs a real
+  # GNU userland, so the gate is its own job instead of a step in `tag`.
+  test:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-
-      - name: Hitung versi berikutnya
-        id: next
-        run: |
-          version=$(bash scripts/next-version.sh)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Versi berikutnya: ${version:-tidak ada rilis}" >> "$GITHUB_STEP_SUMMARY"
-
-  release:
-    needs: version
-    if: needs.version.outputs.version != ''
-    runs-on: windows-latest
-    env:
-      VERSION: ${{ needs.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v6
+          ref: ${{ inputs.ref || github.ref }}
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -47,29 +60,126 @@ jobs:
       - name: Test
         run: dotnet test tests/FolderShift.Tests -c Release
 
-      - name: Build
-        run: dotnet build src/FolderShift -c Release -p:Version=$env:VERSION
+  # ── Cut the tag ────────────────────────────────────────────────────────────
+  tag:
+    needs: [test]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.cut.outputs.version }}
+      pushed:  ${{ steps.cut.outputs.pushed }}
+      sha:     ${{ steps.cut.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0        # without the tag history the base is 0.0.0
 
-      - name: Kemas
-        shell: pwsh
+      - name: Cut the tag
+        id: cut
+        env:
+          # Free-text input reaches the shell only through env, never
+          # through ${{ }} inside run:.
+          LEVEL:    ${{ inputs.level }}
+          MATURITY: ${{ inputs.maturity }}
+          REF:      ${{ inputs.ref || github.ref_name }}
+          DRY_RUN:  ${{ inputs.dry_run }}
+          # The tag is annotated, so git needs a tagger. Record the person who
+          # dispatched the form, not a bot: the tag is the release record.
+          GIT_COMMITTER_NAME:  ${{ github.actor }}
+          GIT_COMMITTER_EMAIL: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
         run: |
-          $out = "src/FolderShift/bin/Release/net48"
-          $name = "FolderShift-v$env:VERSION"
-          New-Item -ItemType Directory -Force "dist/$name" | Out-Null
-          Copy-Item "$out/FolderShift.exe" "dist/$name/"
-          if (Test-Path "$out/FolderShift.exe.config") { Copy-Item "$out/FolderShift.exe.config" "dist/$name/" }
-          Copy-Item "src/FolderShift/Fonts/OFL.txt" "dist/$name/LICENSE-IBM-Plex.txt"
-          Copy-Item "$out/FolderShift.exe" "dist/$name.exe"
-          Compress-Archive -Path "dist/$name/*" -DestinationPath "dist/$name-win.zip"
-          Get-ChildItem dist -File | ForEach-Object {
-            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
-          } | Set-Content dist/SHA256SUMS.txt
+          set -euo pipefail
+          args=(--level "$LEVEL" --maturity "$MATURITY" --ref "$REF")
+          if [ "$DRY_RUN" = "false" ]; then args+=(--push); fi
+          scripts/release.sh "${args[@]}"
 
-      - name: Rilis
+  # ── Build and publish what the tag points at ───────────────────────────────
+  build:
+    needs: [tag]
+    # always() is required: without it a skipped `tag` job (the push path) would
+    # skip this one too. The pushed == 'true' clause is what makes a dry run
+    # stop here.
+    if: >-
+      always()
+      && needs.tag.result != 'failure' && needs.tag.result != 'cancelled'
+      && (github.event_name == 'push' || needs.tag.outputs.pushed == 'true')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.tag.outputs.version || github.ref_name }}
+
+      - name: Resolve and gate the version
+        id: v
+        shell: bash
+        env:
+          VERSION: ${{ needs.tag.outputs.version || github.ref_name }}
+        run: |
+          set -euo pipefail
+          # The form path was already gated in `tag`; this catches a tag
+          # someone pushed by hand without release.sh.
+          scripts/release.sh --validate "$VERSION"
+          number=${VERSION#v}
+          { echo "version=$VERSION"
+            echo "number=$number"          # 0.2.0-beta.1 -> shown in the app
+            echo "core=${number%%-*}"      # 0.2.0        -> assembly version
+            case "$VERSION" in
+              *-*) echo "prerelease=true" ;;
+              *)   echo "prerelease=false" ;;
+            esac
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      # Repeated from `test` on purpose: it is the only arrangement where
+      # "a release exists" implies "its tests passed" on BOTH paths.
+      - name: Test
+        run: dotnet test tests/FolderShift.Tests -c Release
+
+      - name: Build
+        env:
+          CORE:   ${{ steps.v.outputs.core }}
+          NUMBER: ${{ steps.v.outputs.number }}
+        run: dotnet build src/FolderShift -c Release -p:Version=$env:CORE -p:InformationalVersion=$env:NUMBER
+
+      - name: Package
         shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
         run: |
-          $name = "FolderShift-v$env:VERSION"
-          gh release create "v$env:VERSION" "dist/$name.exe" "dist/$name-win.zip" "dist/SHA256SUMS.txt" `
-            --target "$env:GITHUB_SHA" --title "FolderShift v$env:VERSION" --generate-notes
+          # Never write inside the worktree.
+          $out  = "src/FolderShift/bin/Release/net48"
+          $dist = Join-Path $env:RUNNER_TEMP "dist"
+          $name = "FolderShift-$env:VERSION"
+          New-Item -ItemType Directory -Force (Join-Path $dist $name) | Out-Null
+          Copy-Item "$out/FolderShift.exe" (Join-Path $dist $name)
+          if (Test-Path "$out/FolderShift.exe.config") { Copy-Item "$out/FolderShift.exe.config" (Join-Path $dist $name) }
+          Copy-Item "src/FolderShift/Fonts/OFL.txt" (Join-Path $dist "$name/LICENSE-IBM-Plex.txt")
+          Copy-Item "$out/FolderShift.exe" (Join-Path $dist "$name.exe")
+          Compress-Archive -Path (Join-Path $dist "$name/*") -DestinationPath (Join-Path $dist "$name-win.zip")
+          Remove-Item -Recurse (Join-Path $dist $name)
+          Get-ChildItem $dist -File | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content (Join-Path $dist "SHA256SUMS")
+          Get-ChildItem $dist | Format-Table Name, Length
+
+      # gh with explicit paths instead of a glob action: on Windows runner.temp
+      # is a backslash path, which glob-based upload actions do not match.
+      - name: Publish the GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN:   ${{ github.token }}
+          VERSION:    ${{ steps.v.outputs.version }}
+          PRERELEASE: ${{ steps.v.outputs.prerelease }}
+        run: |
+          $files = (Get-ChildItem (Join-Path $env:RUNNER_TEMP "dist") -File).FullName
+          $opts  = @("--verify-tag", "--title", "FolderShift $env:VERSION", "--generate-notes")
+          if ($env:PRERELEASE -eq "true") { $opts += "--prerelease" }
+          gh release create $env:VERSION @files @opts

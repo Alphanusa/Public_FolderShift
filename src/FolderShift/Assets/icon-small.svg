@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- FolderShift: ubin accent #206b77 dengan ikon pindah folder dari design system Alphanusa Account -->
+  <rect width="256" height="256" rx="48" fill="#206b77"/>
+  <g transform="translate(14 14) scale(9.5)" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M8.5 13h7 M13 10.5l2.5 2.5-2.5 2.5"/>
+  </g>
+</svg>

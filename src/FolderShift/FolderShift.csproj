@@ -9,6 +9,8 @@
     <AssemblyName>FolderShift</AssemblyName>
     <RootNamespace>FolderShift</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Dibuat dari Assets/icon.svg (48 px ke atas) dan Assets/icon-small.svg (16-32 px, garis lebih tebal). -->
+    <ApplicationIcon>FolderShift.ico</ApplicationIcon>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <Version>0.0.0</Version>
@@ -34,6 +36,7 @@
 
   <ItemGroup>
     <Resource Include="Fonts\*.ttf" />
+    <Resource Include="FolderShift.ico" />
   </ItemGroup>
 
   <ItemGroup>

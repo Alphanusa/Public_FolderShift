@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:FolderShift"
         xmlns:views="clr-namespace:FolderShift.Views"
         Title="FolderShift" Width="1200" Height="820" MinWidth="1040" MinHeight="640"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="CenterScreen" Icon="FolderShift.ico"
         Background="{StaticResource Ground}" Foreground="{StaticResource Ink}" FontFamily="{StaticResource Sans}"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
 
@@ -34,7 +34,9 @@
                             <Path Data="M0 0l10 10M10 0L0 10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" Width="10" Height="10" />
                         </Button>
                     </StackPanel>
-                    <TextBlock Text="FolderShift" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="16,0" />
+                    <Image Source="FolderShift.ico" Width="16" Height="16" Margin="12,0,0,0" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="" />
+                    <TextBlock Text="FolderShift" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="8,0" />
                 </DockPanel>
             </Border>
 
